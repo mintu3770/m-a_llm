@@ -21,6 +21,7 @@ except Exception as e:
     llm_model = None
 
 def fetch_text_from_url(url: str) -> str | None:
+    """Scrape and clean visible text from a given URL."""
     try:
         headers = {'User-Agent': 'Mozilla/5.0'}
         response = requests.get(url, headers=headers, timeout=15)
@@ -34,6 +35,7 @@ def fetch_text_from_url(url: str) -> str | None:
         return None
 
 def search_online(query: str, num_results: int = 5) -> list:
+    """Perform a Google search and return result URLs."""
     urls = []
     try:
         for j in google_search_unofficial(query, num_results=num_results, lang="en"):
@@ -44,6 +46,7 @@ def search_online(query: str, num_results: int = 5) -> list:
     return urls
 
 def analyze_content_with_llm(text_content: str, company_url: str) -> dict | None:
+    """Use Gemini LLM to extract structured M&A-related insights from web text."""
     if not llm_model or not text_content:
         return None
 
@@ -61,16 +64,20 @@ def analyze_content_with_llm(text_content: str, company_url: str) -> dict | None
     try:
         response = llm_model.generate_content(prompt)
         json_response_text = response.text.strip()
+
+        # Strip triple backticks if present
         if json_response_text.startswith("```json"):
             json_response_text = json_response_text[7:]
         if json_response_text.endswith("```"):
             json_response_text = json_response_text[:-3]
+
         return json.loads(json_response_text.strip())
     except Exception as e:
         print(f"LLM Error: {e}")
         return None
 
 def build_search_queries(profile: str, industry: str, technology: str, region: str, deal_size: str, additional_keywords: str) -> list:
+    """Generate contextual search queries based on user inputs."""
     keyword_chunk = f"{industry} {technology} {region} {deal_size} {additional_keywords}".strip()
     base_patterns = [
         f"{keyword_chunk} M&A news",
@@ -90,6 +97,7 @@ def run_mna_scouting(
     additional_keywords: str = "",
     limit_results_per_query: int = 5
 ) -> pd.DataFrame:
+    """Main entrypoint to perform M&A scouting."""
     if not llm_model:
         raise RuntimeError("LLM model not available. Check your API key.")
 
@@ -114,7 +122,7 @@ def run_mna_scouting(
             text = fetch_text_from_url(url)
             if text and len(text) > 200:
                 data = analyze_content_with_llm(text, url)
-                if data:
+                if data is not None and isinstance(data, dict):
                     data['source_url'] = url
                     data['search_query_origin'] = query
                     data['llm_status'] = "success"
