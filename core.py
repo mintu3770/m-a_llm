@@ -6,9 +6,11 @@ from googlesearch import search as google_search_unofficial
 import google.generativeai as genai
 import time
 import json
+from dotenv import load_dotenv
 
-# --- Configuration ---
-GOOGLE_API_KEY = "AIzaSyBRXKa_FljVBqfdtnq2tvvAGCVN5k5Nlo0"  # Replace with your actual API key
+# --- Load environment variables ---
+load_dotenv()
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 # Configure Gemini
 try:
@@ -69,7 +71,6 @@ def analyze_content_with_llm(text_content: str, company_url: str) -> dict | None
         return None
 
 def build_search_queries(profile: str, industry: str, technology: str, region: str, deal_size: str, additional_keywords: str) -> list:
-    queries = []
     keyword_chunk = f"{industry} {technology} {region} {deal_size} {additional_keywords}".strip()
     base_patterns = [
         f"{keyword_chunk} M&A news",
